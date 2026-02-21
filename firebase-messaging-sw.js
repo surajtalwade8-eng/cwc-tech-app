@@ -24,7 +24,7 @@ messaging.onBackgroundMessage(function(payload){
       requireInteraction: true,
       vibrate: [500, 200, 500],
       data: {
-        url: 'https://surajtalwade8-eng.github.io/technician-system/technician-app.html'
+        url: 'https://cwc-field-tech.netlify.app''
       }
     }
   );
