@@ -1,0 +1,568 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#25D366">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CWC Tech">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>CWC Technician App</title>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('firebase-messaging-sw.js')
+      .then(function(reg){ console.log("✅ FCM SW Registered!"); })
+      .catch(function(err){ console.log("❌ FCM SW Error:", err); });
+  });
+}
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f4f8;min-height:100vh}
+#loginScreen{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#25D366,#128C7E);padding:30px;text-align:center}
+.logo-wrap{background:white;border-radius:50%;width:90px;height:90px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;box-shadow:0 8px 25px rgba(0,0,0,0.2);overflow:hidden}
+.logo-wrap img{width:68px;height:68px;object-fit:contain}
+.logo-fb{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:white;display:none}
+#loginScreen h1{color:white;font-size:26px;margin-bottom:4px}
+#loginScreen p{color:rgba(255,255,255,0.85);margin-bottom:20px;font-size:14px}
+.login-card{background:white;border-radius:18px;padding:24px 20px;width:100%;max-width:340px;text-align:left}
+.login-card h3{font-size:16px;color:#333;margin-bottom:14px;text-align:center;font-weight:700}
+.finp{width:100%;padding:14px;border:2px solid #e8e8e8;border-radius:10px;font-size:15px;outline:none;margin:6px 0}
+.finp:focus{border-color:#25D366}
+.show-pass{position:relative}
+.show-pass input{padding-right:45px}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:0}
+.login-btn{width:100%;padding:16px;background:linear-gradient(135deg,#25D366,#128C7E);color:white;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;margin-top:10px}
+.lerr{color:#f44336;font-size:12px;margin-top:8px;min-height:16px;background:#ffebee;padding:8px;border-radius:8px;display:none}
+#fbStatus{color:rgba(255,255,255,0.7);font-size:12px;margin-bottom:12px}
+#mainScreen{display:none}
+.topbar{background:linear-gradient(135deg,#25D366,#128C7E);color:white;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-logo{width:36px;height:36px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.topbar-logo img{width:28px;height:28px;object-fit:contain}
+.topbar h2{font-size:16px}
+.ncnt{background:white;color:#f44336;border-radius:12px;min-width:30px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;padding:0 6px}
+.sndBtn,.outbtn{background:rgba(255,255,255,0.2);color:white;border:none;padding:6px 10px;border-radius:15px;cursor:pointer;font-size:11px}
+.tabs{display:flex;background:white;border-bottom:2px solid #e0f7e9}
+.tab{flex:1;padding:11px 2px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:#999;border-bottom:3px solid transparent}
+.tab.on{color:#25D366;border-bottom:3px solid #25D366;background:#f0fff9}
+.list{padding:15px;overflow-y:auto;height:calc(100vh - 155px)}
+.card{background:white;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 3px 10px rgba(0,0,0,0.07)}
+.nc{border-left:5px solid #f44336}.ac{border-left:5px solid #2196F3}.pc{border-left:5px solid #ff9800}.dc{border-left:5px solid #4CAF50}
+.cid{font-size:11px;color:#bbb;font-weight:600;margin-bottom:5px}
+.cname{font-size:18px;font-weight:700;color:#111;margin-bottom:4px}
+.caddr{color:#555;font-size:14px;margin:7px 0;line-height:1.5}
+.cprob{background:#fff8f0;padding:11px;border-radius:10px;font-size:13px;color:#555;margin:9px 0}
+.chip{display:inline-block;padding:4px 11px;border-radius:18px;font-size:12px;font-weight:700;margin:3px}
+.cN{background:#ffebee;color:#c62828}.cA{background:#e3f2fd;color:#1565c0}.cP{background:#fff3cd;color:#856404}.cD{background:#e8f5e9;color:#2e7d32}.cM{background:#f3e5f5;color:#6a1b9a}
+.abtn{width:100%;padding:15px;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;margin:4px 0;display:block}
+.acc{background:linear-gradient(135deg,#25D366,#128C7E);color:white}
+.don{background:linear-gradient(135deg,#ff6b35,#f44336);color:white}
+.pnd{background:#ff9800;color:white}.cal{background:#2196F3;color:white}
+.empty{text-align:center;padding:60px 20px;color:#ccc}
+#popup{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;justify-content:center;align-items:center;padding:20px}
+#popup.on{display:flex;animation:popIn 0.3s ease}
+@keyframes popIn{from{transform:scale(0.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes bnc{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.pbox{background:white;border-radius:22px;padding:28px 20px;width:100%;max-width:370px;text-align:center}
+.ptitle{font-size:21px;font-weight:700;color:#f44336;margin:10px 0 4px}
+.pcust{font-size:18px;font-weight:700;margin:5px 0}
+.paddr{background:#e8f5e9;padding:11px;border-radius:10px;margin:9px 0;font-size:14px;color:#2e7d32;text-align:left}
+.pprob{background:#fff3cd;padding:9px;border-radius:10px;font-size:13px;color:#666;margin:7px 0;text-align:left}
+.pacc{width:100%;padding:17px;background:linear-gradient(135deg,#25D366,#128C7E);color:white;border:none;border-radius:13px;font-size:17px;font-weight:700;cursor:pointer;margin-top:10px;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 4px 14px rgba(37,211,102,0.4)}50%{box-shadow:0 4px 30px rgba(37,211,102,0.9)}}
+.pbusy{width:100%;padding:13px;background:#ff9800;color:white;border:none;border-radius:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:7px}
+#stepModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9998;justify-content:flex-end;align-items:flex-end}
+#stepModal.on{display:flex;animation:slideUp 0.3s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sbox{background:white;border-radius:22px 22px 0 0;width:100%;max-height:94vh;overflow:hidden;display:flex;flex-direction:column}
+.prog-bar{display:flex;background:#f8f8f8;padding:14px 20px 11px;border-bottom:1px solid #eee}
+.prog-step{flex:1;text-align:center;font-size:12px;font-weight:700;color:#ccc;position:relative}
+.prog-step.done{color:#25D366}.prog-step.active{color:#128C7E}
+.prog-dot{width:28px;height:28px;border-radius:50%;background:#ddd;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.prog-step.done .prog-dot{background:#25D366}
+.prog-step.active .prog-dot{background:#128C7E;box-shadow:0 0 0 3px rgba(18,140,126,0.25)}
+.prog-line{position:absolute;top:14px;left:55%;width:90%;height:3px;background:#ddd;z-index:-1}
+.prog-step.done .prog-line{background:#25D366}
+.sc{flex:1;overflow-y:auto;padding:18px}
+.st{font-size:17px;font-weight:700;color:#128C7E;margin-bottom:3px}
+.ss{font-size:13px;color:#888;margin-bottom:13px}
+.cc{background:#f0f8ff;padding:11px;border-radius:11px;margin-bottom:14px;font-size:13px;line-height:1.9;border-left:4px solid #25D366}
+label{display:block;font-weight:700;color:#333;margin:11px 0 3px;font-size:14px}
+input,select,textarea{width:100%;padding:11px;border:2px solid #e8e8e8;border-radius:9px;font-size:15px;outline:none;font-family:Arial;box-sizing:border-box}
+input:focus,select:focus,textarea:focus{border-color:#25D366}
+.cam-box{border:3px dashed #25D366;border-radius:13px;padding:22px;text-align:center;margin:9px 0;cursor:pointer;background:#f0fff4}
+.cam-box-r{border:3px dashed #ff6b35;border-radius:13px;padding:18px;text-align:center;margin:9px 0;cursor:pointer;background:#fff8f5}
+.cam-icon{font-size:44px;margin-bottom:7px}
+.cam-text{font-weight:700;font-size:15px;color:#25D366}
+.cam-text-r{font-weight:700;font-size:15px;color:#ff6b35}
+.cam-sub{color:#aaa;font-size:12px;margin-top:3px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.pthumb{position:relative;width:100%;padding-bottom:100%;border-radius:12px;overflow:hidden;background:#e0e0e0}
+.pthumb img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block}
+.pdel{position:absolute;top:5px;right:5px;z-index:5;background:rgba(220,30,30,0.9);color:white;border:none;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;font-weight:700;line-height:26px;text-align:center;padding:0}
+.exp-box{background:linear-gradient(135deg,#ff6b35,#f44336);color:white;padding:18px;border-radius:13px;text-align:center;margin:11px 0}
+.exp-box label{color:rgba(255,255,255,0.85);margin-bottom:7px}
+.exp-input{background:transparent;border:none;border-bottom:2px solid rgba(255,255,255,0.5);border-radius:0;color:white;font-size:30px;font-weight:700;text-align:center;width:80%;padding:5px}
+.exp-input::placeholder{color:rgba(255,255,255,0.5)}
+.step-nav{padding:14px 18px;background:white;border-top:1px solid #f0f0f0;display:flex;gap:9px}
+.bn{flex:2;padding:15px;background:linear-gradient(135deg,#25D366,#128C7E);color:white;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer}
+.bn-red{flex:2;padding:15px;background:linear-gradient(135deg,#f44336,#c62828);color:white;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer}
+.bp{flex:1;padding:15px;background:#f0f0f0;color:#666;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer}
+.bsk{flex:1;padding:15px;background:#fff8e1;color:#e65100;border:none;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="logo-wrap">
+    <img src="https://ecompusell.com/images/home/CWC_LOGO_Header.svg" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="CWC">
+    <div class="logo-fb">CWC</div>
+  </div>
+  <h1>CWC Technician App</h1>
+  <p>Admin se mila User ID aur Password use karo</p>
+  <div id="fbStatus">Connecting...</div>
+  <div class="login-card">
+    <h3>🔐 Login</h3>
+    <input class="finp" type="text" id="loginId" placeholder="User ID (jaise: ramesh01)" autocomplete="username" autocapitalize="none">
+    <div class="show-pass">
+      <input class="finp" type="password" id="loginPass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="eye-btn" onclick="togglePass()" id="eyeBtn">👁️</button>
+    </div>
+    <div class="lerr" id="lerr"></div>
+    <button class="login-btn" onclick="doLogin()">LOGIN</button>
+  </div>
+</div>
+
+<!-- MAIN SCREEN -->
+<div id="mainScreen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <img src="https://ecompusell.com/images/home/CWC_LOGO_Header.svg" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="CWC">
+        <div style="display:none;font-size:12px;font-weight:900;color:#25D366">CWC</div>
+      </div>
+      <div><div style="font-size:10px;opacity:0.8">Welcome</div><h2 id="tNm">Tech</h2></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="ncnt" id="nCnt">0</span>
+      <button class="sndBtn" onclick="testSound()">🔔 Sound</button>
+      <button class="outbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab on" id="t-New" onclick="showTab('New')">New</div>
+    <div class="tab" id="t-Accepted" onclick="showTab('Accepted')">Work</div>
+    <div class="tab" id="t-Pending" onclick="showTab('Pending')">Pending</div>
+    <div class="tab" id="t-Done" onclick="showTab('Done')">Done</div>
+  </div>
+  <div class="list" id="cList"></div>
+</div>
+
+<!-- POPUP -->
+<div id="popup">
+  <div class="pbox">
+    <div style="font-size:50px;animation:bnc 0.5s infinite alternate">&#128276;</div>
+    <div class="ptitle">NEW CASE!</div>
+    <div class="pcust" id="pCust"></div>
+    <div class="paddr" id="pAddr"></div>
+    <div class="pprob" id="pProb"></div>
+    <div style="font-size:11px;color:#bbb;margin:7px 0">Ticket: <b id="pTkt"></b></div>
+    <button class="pacc" id="pAccBtn">ACCEPT NOW</button>
+    <button class="pbusy" id="pBusyBtn">Baad Me</button>
+  </div>
+</div>
+
+<!-- STEP MODAL -->
+<div id="stepModal">
+  <div class="sbox">
+    <div class="prog-bar">
+      <div class="prog-step active" id="ps1"><div class="prog-dot">1</div><div>Report+Photos</div><div class="prog-line"></div></div>
+      <div class="prog-step" id="ps2"><div class="prog-dot">2</div><div>Expense</div></div>
+    </div>
+    <div id="step1" class="sc">
+      <div class="st">Job Report + Photos</div>
+      <div class="ss">Details fill karo aur photos lo</div>
+      <div class="cc" id="cc1"></div>
+      <label>Serial Number (Machine)</label>
+      <input id="rSerial" placeholder="VNB3X12345 (optional)">
+      <label>Kya Kaam Kiya *</label>
+      <textarea id="rWork" rows="3" placeholder="Toner replace kiya..."></textarea>
+      <label>Parts Used</label>
+      <input id="rParts" placeholder="HP 12A Toner (ya N/A)">
+      <label>Time Taken</label>
+      <select id="rTime"><option>30 minutes</option><option>1 hour</option><option>1.5 hours</option><option>2 hours</option><option>2+ hours</option><option>Half Day</option><option>Full Day</option></select>
+      <label>Customer Feedback</label>
+      <select id="rFb"><option>Excellent</option><option>Good</option><option>Average</option><option>Below Average</option></select>
+      <label>Remarks</label>
+      <textarea id="rRem" rows="2" placeholder="Extra info..."></textarea>
+      <label>Job Photos</label>
+      <input type="file" id="jobCam" accept="image/*" multiple style="display:none">
+      <div class="cam-box" id="camBox"><div class="cam-icon">&#128247;</div><div class="cam-text">Camera / Gallery se Photo Lo</div><div class="cam-sub">Multiple photos le sakte ho</div></div>
+      <div class="pgrid" id="jobGrid"></div>
+      <p id="photoCount" style="font-size:13px;color:#888;text-align:center;margin:5px 0">0 photos</p>
+    </div>
+    <div id="step2" class="sc" style="display:none">
+      <div class="st">Expense Details</div>
+      <div class="ss">Kharcha daalo ya Skip karo</div>
+      <div class="cc" id="cc2"></div>
+      <div class="exp-box">
+        <label>Total Expense (Rs.)</label>
+        <input id="expAmt" type="number" placeholder="0" inputmode="numeric" class="exp-input">
+      </div>
+      <label>Expense Breakdown</label>
+      <textarea id="expDet" rows="3" placeholder="Parts: Rs.300, Travel: Rs.100..."></textarea>
+      <label>Receipt Photo</label>
+      <input type="file" id="rcptCam" accept="image/*" style="display:none">
+      <div class="cam-box-r" id="rcptBox"><div class="cam-icon">&#129534;</div><div class="cam-text-r">Bill / Receipt Upload</div><div class="cam-sub">Camera ya Gallery se</div></div>
+      <div id="rcptPrev" style="margin:10px 0;text-align:center"></div>
+    </div>
+    <div class="step-nav">
+      <button class="bp" id="btnPrev">Back</button>
+      <button class="bsk" id="btnSkip">Skip</button>
+      <button class="bn" id="btnNext">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+
+<script>
+var db=null,myKey="",myName="",myCases=[],curTab="New",popKey="",repKey="",firstLoad=true;
+var alertInt=null,audioCtx=null,curStep=1,jobPhotos=[],rcptPhoto=null;
+
+firebase.initializeApp({
+  apiKey:"AIzaSyCmhzQqH60pyOD-qwCcm52nCXmT0n1Buy0",
+  authDomain:"tech-b30b8.firebaseapp.com",
+  databaseURL:"https://tech-b30b8-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  projectId:"tech-b30b8",
+  storageBucket:"tech-b30b8.firebasestorage.app",
+  messagingSenderId:"815434648437",
+  appId:"1:815434648437:web:bd11c672f57fc24e1ba13c"
+});
+db = firebase.database();
+document.getElementById("fbStatus").textContent="Connected ✅";
+
+window.addEventListener("load",function(){
+  document.getElementById("pAccBtn").addEventListener("click",accFromPopup);
+  document.getElementById("pBusyBtn").addEventListener("click",closePopup);
+  document.getElementById("btnNext").addEventListener("click",nextStep);
+  document.getElementById("btnPrev").addEventListener("click",prevStep);
+  document.getElementById("btnSkip").addEventListener("click",skipExpense);
+  document.getElementById("camBox").addEventListener("click",function(){document.getElementById("jobCam").click();});
+  document.getElementById("rcptBox").addEventListener("click",function(){document.getElementById("rcptCam").click();});
+  document.getElementById("jobCam").addEventListener("change",addJobPhoto);
+  document.getElementById("rcptCam").addEventListener("change",addReceipt);
+  document.body.addEventListener("touchstart",function(){if(!audioCtx)initAudio();else resumeAudio();},{once:true});
+  document.body.addEventListener("click",function(){if(!audioCtx)initAudio();else resumeAudio();},{once:true});
+  myKey=localStorage.getItem("cwc_tk")||"";
+  myName=localStorage.getItem("cwc_tn")||"";
+  if(myKey&&myName){startApp();}
+});
+
+function togglePass(){
+  var p=document.getElementById("loginPass");
+  var btn=document.getElementById("eyeBtn");
+  if(p.type==="password"){p.type="text";btn.textContent="🙈";}
+  else{p.type="password";btn.textContent="👁️";}
+}
+function showErr(msg){var e=document.getElementById("lerr");e.textContent=msg;e.style.display=msg?"block":"none";}
+
+function doLogin(){
+  if(!audioCtx)initAudio();else resumeAudio();
+  var userId=document.getElementById("loginId").value.trim().toLowerCase();
+  var pass=document.getElementById("loginPass").value;
+  showErr("");
+  if(!userId){showErr("User ID daalo!");return;}
+  if(!pass){showErr("Password daalo!");return;}
+  db.ref("technicians").orderByChild("userId").equalTo(userId).once("value").then(function(snap){
+    if(!snap.exists()){showErr("❌ User ID galat hai!");return;}
+    var found=false;
+    snap.forEach(function(c){
+      var t=c.val();
+      var inputHash=btoa(pass+"_cwc_salt_2024");
+      if(t.passHash===inputHash){
+        found=true;
+        myKey=c.key;
+        myName=t.name;
+        localStorage.setItem("cwc_tk",myKey);
+        localStorage.setItem("cwc_tn",myName);
+        initAudio();
+        startApp();
+      }
+    });
+    if(!found)showErr("❌ Password galat hai!");
+  }).catch(function(e){showErr("Error: "+e.message);});
+}
+
+function doLogout(){
+  stopAlert();
+  localStorage.removeItem("cwc_tk");
+  localStorage.removeItem("cwc_tn");
+  location.reload();
+}
+
+function initAudio(){try{if(!audioCtx){audioCtx=new(window.AudioContext||window.webkitAudioContext)();keepAlive();}if(audioCtx.state==="suspended")audioCtx.resume();}catch(e){}}
+function keepAlive(){if(!audioCtx)return;var b=audioCtx.createBuffer(1,audioCtx.sampleRate,audioCtx.sampleRate);var s=audioCtx.createBufferSource();s.buffer=b;s.connect(audioCtx.destination);s.start(0);s.onended=function(){if(audioCtx)keepAlive();};}
+function resumeAudio(){if(audioCtx&&audioCtx.state==="suspended")audioCtx.resume();}
+function beepOnce(){
+  initAudio();if(!audioCtx)return;
+  try{
+    var t=audioCtx.currentTime;
+    [[880,t,t+0.4],[660,t+0.45,t+0.85],[1100,t+0.9,t+1.5]].forEach(function(x){
+      var o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.connect(g);g.connect(audioCtx.destination);
+      o.type="sine";o.frequency.value=x[0];
+      g.gain.setValueAtTime(0.7,x[1]);
+      g.gain.exponentialRampToValueAtTime(0.001,x[2]);
+      o.start(x[1]);o.stop(x[2]);
+    });
+  }catch(e){}
+}
+function playAlert(){stopAlert();beepOnce();alertInt=setInterval(beepOnce,2500);}
+function stopAlert(){if(alertInt){clearInterval(alertInt);alertInt=null;}}
+function testSound(){initAudio();setTimeout(beepOnce,100);}
+
+function saveFcmToken(){
+  try{
+    var messaging=firebase.messaging();
+    messaging.onTokenRefresh(function(){
+      messaging.getToken({vapidKey:"BKi85qDjwwfYudtFyvlBlKYDr-7G_a1U-WbqaQRN3SzJCS12ynqj1hincrZT-eh4yZeqIv5dCXJ9TvpACI74RZA"})
+      .then(function(t){if(t){db.ref("technicians/"+myKey+"/fcmToken").set(t);console.log("✅ Token refreshed!");}});
+    });
+    navigator.serviceWorker.ready.then(function(reg){
+      return messaging.getToken({serviceWorkerRegistration:reg,vapidKey:"BKi85qDjwwfYudtFyvlBlKYDr-7G_a1U-WbqaQRN3SzJCS12ynqj1hincrZT-eh4yZeqIv5dCXJ9TvpACI74RZA"});
+    }).then(function(token){
+      if(token){db.ref("technicians/"+myKey+"/fcmToken").set(token);console.log("✅ FCM Token saved!");}
+    }).catch(function(e){console.log("FCM Error: "+e.message);});
+  }catch(e){console.log("Messaging error: "+e.message);}
+}
+
+function startApp(){
+  document.getElementById("loginScreen").style.display="none";
+  document.getElementById("mainScreen").style.display="block";
+  document.getElementById("tNm").textContent=myName;
+
+  // Notification permission + FCM Token
+  if("Notification" in window){
+    Notification.requestPermission().then(function(perm){
+      if(perm==="granted"){saveFcmToken();}
+    });
+  }
+
+  // Foreground message handler
+  try{
+    var messaging=firebase.messaging();
+    messaging.onMessage(function(payload){
+      console.log("Foreground message:",payload);
+      beepOnce();
+      if(Notification.permission==="granted"){
+        new Notification(payload.notification?.title||"🔔 New Case!",{
+          body:payload.notification?.body||"Naya case aaya!",
+          icon:'icon-192.png',
+          requireInteraction:true
+        });
+      }
+    });
+  }catch(e){console.log("onMessage error:",e.message);}
+
+  document.addEventListener("visibilitychange",function(){if(!document.hidden)resumeAudio();});
+
+  db.ref("cases").orderByChild("techKey").equalTo(myKey).on("value",function(snap){
+    var prev=myCases.map(function(c){return c.key;});
+    myCases=[];
+    if(snap.exists())snap.forEach(function(c){var d=c.val();d.key=c.key;myCases.unshift(d);});
+    var nc=myCases.filter(function(c){return c.status==="New";}).length;
+    var np=myCases.filter(function(c){return c.status==="Pending";}).length;
+    document.getElementById("nCnt").textContent=nc+(np>0?"+"+np:"");
+    if(!firstLoad){
+      for(var i=0;i<myCases.length;i++){
+        if(myCases[i].status==="New"&&prev.indexOf(myCases[i].key)===-1){
+          showPopup(myCases[i]);break;
+        }
+      }
+    }
+    firstLoad=false;render();
+  });
+}
+
+function showPopup(c){
+  initAudio();popKey=c.key;
+  document.getElementById("pCust").textContent=c.customer+" ("+c.mobile+")";
+  document.getElementById("pAddr").textContent=c.address;
+  document.getElementById("pProb").textContent=c.problem;
+  document.getElementById("pTkt").textContent=c.id;
+  document.getElementById("popup").classList.add("on");
+  document.title="🔔 NEW CASE!";
+  setTimeout(function(){playAlert();},300);
+  if(navigator.vibrate)navigator.vibrate([600,200,600,200,600]);
+  if("Notification" in window&&Notification.permission==="granted"){
+    new Notification("🔔 New Case!",{body:c.customer+" - "+c.address,requireInteraction:true});
+  }
+}
+function closePopup(){document.getElementById("popup").classList.remove("on");stopAlert();document.title="CWC Tech";}
+function accFromPopup(){if(popKey){db.ref("cases/"+popKey).update({status:"Accepted"});closePopup();showTab("Accepted");}}
+
+function showTab(t){
+  curTab=t;
+  ["New","Accepted","Pending","Done"].forEach(function(x){
+    var el=document.getElementById("t-"+x);
+    if(el)el.className=(x===t)?"tab on":"tab";
+  });
+  render();
+}
+
+function makeBtn(label,cls,key,fn){
+  var btn=document.createElement("button");
+  btn.className=cls;btn.textContent=label;
+  btn.addEventListener("click",function(){fn(key);});
+  return btn;
+}
+
+function render(){
+  var list=document.getElementById("cList");list.innerHTML="";
+  var f=myCases.filter(function(c){return c.status===curTab;});
+  if(!f.length){
+    var msgs={New:"Koi naya case nahi!",Accepted:"Koi active case nahi!",Pending:"Koi pending nahi!",Done:"Koi done nahi!"};
+    var e=document.createElement("div");e.className="empty";e.textContent=msgs[curTab]||"";list.appendChild(e);return;
+  }
+  f.forEach(function(c){
+    var clsM={New:"nc",Accepted:"ac",Pending:"pc",Done:"dc"};
+    var chipM={New:"cN",Accepted:"cA",Pending:"cP",Done:"cD"};
+    var card=document.createElement("div");card.className="card "+(clsM[c.status]||"dc");
+    var cid=document.createElement("div");cid.className="cid";cid.textContent=c.id+" - "+(c.date||"");card.appendChild(cid);
+    var cn=document.createElement("div");cn.className="cname";cn.textContent=c.customer;card.appendChild(cn);
+    var ca=document.createElement("div");ca.className="caddr";ca.textContent=c.mobile+" | "+c.address;card.appendChild(ca);
+    var cp=document.createElement("div");cp.className="cprob";cp.textContent=c.problem;card.appendChild(cp);
+    var chips=document.createElement("div");
+    var mc=document.createElement("span");mc.className="chip cM";mc.textContent=c.model||"N/A";
+    var sc=document.createElement("span");sc.className="chip "+(chipM[c.status]||"cN");sc.textContent=c.status;
+    chips.appendChild(mc);chips.appendChild(sc);card.appendChild(chips);
+    if(c.status==="New")card.appendChild(makeBtn("✅ Accept Case","abtn acc",c.key,accCase));
+    if(c.status==="Accepted"){card.appendChild(makeBtn("✔ Case Done - Report","abtn don",c.key,openSteps));card.appendChild(makeBtn("Mark Pending","abtn pnd",c.key,setPending));}
+    if(c.status==="Pending"){card.appendChild(makeBtn("✔ Case Done - Report","abtn don",c.key,openSteps));card.appendChild(makeBtn("Resume Work","abtn acc",c.key,setAccepted));}
+    var cb=document.createElement("button");cb.className="abtn cal";cb.textContent="📞 Call Customer";
+    cb.addEventListener("click",function(){window.location.href="tel:"+c.mobile;});card.appendChild(cb);
+    list.appendChild(card);
+  });
+}
+
+function accCase(k){beepOnce();db.ref("cases/"+k).update({status:"Accepted"});showTab("Accepted");}
+function setPending(k){db.ref("cases/"+k).update({status:"Pending"});showTab("Pending");}
+function setAccepted(k){db.ref("cases/"+k).update({status:"Accepted"});showTab("Accepted");}
+
+function openSteps(k){
+  repKey=k;curStep=1;jobPhotos=[];rcptPhoto=null;
+  var c=myCases.find(function(x){return x.key===k;});if(!c)return;
+  var info="<b>"+c.id+"</b> - "+c.customer+" - "+c.mobile+"<br>"+c.address+"<br>"+c.problem;
+  document.getElementById("cc1").innerHTML=info;
+  document.getElementById("cc2").innerHTML=info;
+  ["rWork","rParts","rRem","rSerial","expAmt","expDet"].forEach(function(id){document.getElementById(id).value="";});
+  document.getElementById("jobGrid").innerHTML="";
+  document.getElementById("rcptPrev").innerHTML="";
+  document.getElementById("photoCount").textContent="0 photos";
+  document.getElementById("stepModal").classList.add("on");
+  updateUI();
+}
+function closeSteps(){document.getElementById("stepModal").classList.remove("on");}
+function updateUI(){
+  document.getElementById("step1").style.display=curStep===1?"block":"none";
+  document.getElementById("step2").style.display=curStep===2?"block":"none";
+  [1,2].forEach(function(i){document.getElementById("ps"+i).className="prog-step"+(i<curStep?" done":i===curStep?" active":"");});
+  document.getElementById("btnPrev").style.display=curStep>1?"inline-block":"none";
+  document.getElementById("btnSkip").style.display=curStep===2?"inline-block":"none";
+  var nb=document.getElementById("btnNext");
+  if(curStep===2){nb.className="bn-red";nb.textContent="Submit Report";}
+  else{nb.className="bn";nb.textContent="Next";}
+}
+function nextStep(){if(curStep===1){if(!document.getElementById("rWork").value.trim()){alert("Kya kaam kiya fill karo!");return;}curStep=2;updateUI();}else{submitAll();}}
+function prevStep(){if(curStep>1){curStep--;updateUI();}}
+function skipExpense(){submitAll();}
+
+function compressImg(file,cb){
+  var r=new FileReader();
+  r.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var cv=document.createElement("canvas"),MAX=800,w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      cv.width=w;cv.height=h;
+      cv.getContext("2d").drawImage(img,0,0,w,h);
+      cb(cv.toDataURL("image/jpeg",0.6));
+    };
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+function addJobPhoto(ev){
+  var files=ev.target.files;if(!files||!files.length)return;
+  for(var i=0;i<files.length;i++){(function(f){compressImg(f,function(b64){jobPhotos.push(b64);renderGrid();});})(files[i]);}
+  ev.target.value="";
+}
+function renderGrid(){
+  var grid=document.getElementById("jobGrid");grid.innerHTML="";
+  document.getElementById("photoCount").textContent=jobPhotos.length+" photo(s)";
+  jobPhotos.forEach(function(b64,idx){
+    var wrap=document.createElement("div");wrap.className="pthumb";
+    var img=document.createElement("img");img.src=b64;
+    var btn=document.createElement("button");btn.className="pdel";btn.textContent="x";btn.type="button";
+    (function(i){btn.addEventListener("click",function(e){e.stopPropagation();jobPhotos.splice(i,1);renderGrid();});})(idx);
+    wrap.appendChild(img);wrap.appendChild(btn);grid.appendChild(wrap);
+  });
+}
+function addReceipt(ev){
+  var f=ev.target.files[0];if(!f)return;
+  compressImg(f,function(b64){
+    rcptPhoto=b64;
+    var prev=document.getElementById("rcptPrev");prev.innerHTML="";
+    var wrap=document.createElement("div");wrap.style.cssText="position:relative;width:180px;padding-bottom:180px;margin:0 auto;border-radius:12px;overflow:hidden;background:#e0e0e0;";
+    var img=document.createElement("img");img.src=b64;img.style.cssText="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;";
+    var btn=document.createElement("button");btn.className="pdel";btn.textContent="x";btn.type="button";
+    btn.addEventListener("click",function(){rcptPhoto=null;prev.textContent="Removed";});
+    wrap.appendChild(img);wrap.appendChild(btn);prev.appendChild(wrap);
+  });
+  ev.target.value="";
+}
+
+function submitAll(){
+  var w=document.getElementById("rWork").value.trim();
+  if(!w){alert("Kya kaam kiya fill karo!");curStep=1;updateUI();return;}
+  var c=myCases.find(function(x){return x.key===repKey;});if(!c)return;
+  var today=new Date();
+  var dateStr=today.getDate()+"-"+(today.getMonth()+1)+"-"+today.getFullYear();
+  var now=today.toLocaleString("hi-IN");
+  var rep={
+    caseId:c.id,customer:c.customer,mobile:c.mobile,address:c.address,
+    problem:c.problem,model:c.model||"N/A",techName:myName,
+    serialNumber:document.getElementById("rSerial").value||"N/A",
+    workDone:w,partsUsed:document.getElementById("rParts").value||"N/A",
+    timeTaken:document.getElementById("rTime").value,
+    customerFeedback:document.getElementById("rFb").value,
+    remarks:document.getElementById("rRem").value||"N/A",
+    jobPhotos:jobPhotos,
+    expense:{amount:document.getElementById("expAmt").value||"0",details:document.getElementById("expDet").value||"N/A",receiptPhoto:rcptPhoto},
+    date:dateStr,completedAt:now
+  };
+  var nb=document.getElementById("btnNext");nb.textContent="Saving...";nb.disabled=true;
+  db.ref("reports/"+myName+"/"+dateStr+"/"+c.id).set(rep).then(function(){
+    return db.ref("cases/"+repKey).update({status:"Done",completedAt:now,expenseAmt:rep.expense.amount,photoCount:jobPhotos.length,serialNumber:rep.serialNumber});
+  }).then(function(){
+    closeSteps();beepOnce();showTab("Done");
+    if(navigator.vibrate)navigator.vibrate([200,100,200]);
+    alert("✅ Report submit ho gaya! Case DONE!");
+  }).catch(function(e){alert("Error: "+e.message);nb.textContent="Submit Report";nb.disabled=false;});
+}
+</script>
+</body>
+</html>
